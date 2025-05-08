@@ -245,6 +245,49 @@ def bin2list(input_list):
     return [int2string(bin2int(bin)) for bin in input_list]
 
 
+def bytes2bin(input_bytes: bytes) -> List[str]:
+    """Convert bytes to list of 8-bit binary strings."""
+    try:
+        return [format(byte, "08b") for byte in input_bytes]
+    except Exception as e:
+        raise ValueError(f"Error converting bytes to binary: {str(e)}")
+
+
+def bin2bytes(input_list: List[str]) -> bytes:
+    """Convert list of 8-bit binary strings to bytes."""
+    try:
+        byte_list = [int(bin_str, 2) for bin_str in input_list]
+        return bytes(byte_list)
+    except Exception as e:
+        raise ValueError(f"Error converting binary to bytes: {str(e)}")
+
+
+def qam16ModulationBytes(input_bytes: bytes, snr_db: float = 10) -> bytes:
+    """
+    Modulate bytes in 16QAM transmission and simulate noisy channel conditions.
+
+    Parameters:
+        input_bytes (bytes): Input bytes to be modulated
+        snr_db (float): Signal-to-Noise ratio in dB
+
+    Returns:
+        bytes: Modulated and noisy bytes
+    """
+    if not isinstance(input_bytes, bytes):
+        raise TypeError("Input must be bytes")
+
+    if not input_bytes:
+        return b""
+
+    try:
+        bit_list = bytes2bin(input_bytes)
+        bit_list_noisy = introduce_noise(bit_list, snr=snr_db)
+        back_to_bytes = bin2bytes(bit_list_noisy)
+        return back_to_bytes
+    except Exception as e:
+        raise RuntimeError(f"Error during QAM bytes modulation: {str(e)}")
+
+
 def image_tensor2bin(tensor: torch.Tensor) -> List[str]:
     """
     Convert image tensor to list of binary strings.
@@ -390,3 +433,9 @@ if __name__ == "__main__":
     noisy_image.show()
     noisy_image.save("noisy_image.png")
     print("Noisy image saved to 'noisy_image.png'")
+
+    # Test QAM modulation with bytes
+    input_bytes = b"This is a test byte string for QAM modulation."
+    noisy_bytes = qam16ModulationBytes(input_bytes, snr_db=snr_db)
+    print(f"Original bytes: {input_bytes}")
+    print(f"Noisy bytes: {noisy_bytes}")

@@ -10,7 +10,7 @@ from loguru import logger
 from omegaconf import DictConfig
 from PIL import Image
 
-from qam import qam16ModulationImage, qam16ModulationString, qam16ModulationTensor
+from qam import qam16ModulationImage, qam16ModulationString, qam16ModulationTensor, qam16ModulationBytes
 
 # These keys are exempt from adding noise
 noise_exempt_keys = [
@@ -27,32 +27,42 @@ noise_exempt_keys = [
 
 
 class Channel(nn.Module):
-    def __init__(self, cfg: DictConfig = None):
+    def __init__(self, channel_type: str = "awgn", snr: float = None):
         super(Channel, self).__init__()
-        if cfg is None:
-            cfg = DictConfig(dict(channel_type="none", snr=None))
-        self.chan_type = cfg.channel_type  # "awgn", "none"
-        self.snr = cfg.snr
+        self.chan_type = channel_type  # "awgn", "none"
+        self.snr = snr
         assert self.chan_type in ["none", "awgn"], "Only AWGN channel is supported."
-        logger.info("Built {} channel, SNR {} dB.".format(cfg.channel_type, cfg.snr))
+        # logger.info("Built {} channel, SNR {} dB.".format(cfg.channel_type, cfg.snr))
 
     def gaussian_noise_layer(self, input: str | Image.Image | torch.Tensor):
         if isinstance(input, str):
             return qam16ModulationString(input, snr_db=self.snr)
 
+        elif isinstance(input, bytes):
+            return qam16ModulationBytes(input, snr_db=self.snr)
+        
         elif isinstance(input, Image.Image):
             return qam16ModulationImage(input, snr_db=self.snr)
 
         elif isinstance(input, torch.Tensor):
+            return input
             return qam16ModulationTensor(input, snr_db=self.snr)
 
         elif isinstance(input, np.ndarray):
             return qam16ModulationTensor(
                 torch.from_numpy(input), snr_db=self.snr
             ).numpy()
+            
+        elif isinstance(input, int):
+            return input
+        
+        elif  isinstance(input, float):
+            return qam16ModulationTensor(
+                torch.tensor(input), snr_db=self.snr
+            ).item()
 
         else:
-            # raise ValueError("Unsupported input type.")
+            raise ValueError("Unsupported input type.")
             return input
 
     def calculate_size_KB(self, data, sparse=False):

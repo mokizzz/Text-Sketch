@@ -197,10 +197,11 @@ if __name__ == "__main__":
     # parse command line arguments
     parser = ArgumentParser()
     parser.add_argument("--N", default=4, type=int)
-    parser.add_argument("--dataset", default="bsd100", type=str)
+    parser.add_argument("--dataset", default="flickr8k", type=str)
     parser.add_argument("--data_root", default="/home/zhaozr/datasets", type=str)
     parser.add_argument("--loss", default="clip", type=str)
     parser.add_argument("--lam_sketch", default=1.0, type=str)
+    parser.add_argument("--snr", default=None, type=float)
     args = parser.parse_args()
 
     # init logger
@@ -265,7 +266,7 @@ if __name__ == "__main__":
     all_metrics = []
     all_origi_images = []
     all_recon_images = []
-    channel = Channel()
+    channel = Channel(snr=args.snr)
     for i, x in tqdm.tqdm(enumerate(dm.test_dset)):
         if i >= 100 > 0:
             logger.warning("Stopping after processing 100 images")
